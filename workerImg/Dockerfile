@@ -1,5 +1,4 @@
-FROM debian:jessie
-MAINTAINER Getty Images "https://github.com/gettyimages"
+FROM r-base
 
 RUN apt-get update \
  && apt-get install -y locales \
@@ -70,15 +69,20 @@ RUN curl -sL --retry 3 \
  && chown -R root:root $SPARK_HOME
 
 
-# R
 RUN echo "deb http://deb.debian.org/debian testing main" >> /etc/apt/sources.list
 RUN echo "deb-src http://deb.debian.org/debian testing main" >> /etc/apt/sources.list
+
 RUN apt-get update
 RUN apt-get -y build-dep libcurl4-gnutls-dev
-RUN apt-get -y install libcurl4-gnutls-dev
-RUN apt-get -y install libmysqlclient-dev
+RUN apt-get -y install libcurl4-gnutls-dev libssl-dev libxml2-dev 
+
+
+#setup R configs
 RUN echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile
+RUN Rscript -e "install.packages('devtools', dependencies=TRUE)"
+RUN Rscript -e "install.packages('plotly', dependencies=TRUE)"
+
 
 
 WORKDIR $SPARK_HOME
-CMD ["bin/spark-class", "org.apache.spark.deploy.master.Master"]
+CMD ["bin/spark-class", "org.apache.spark.deploy.worker.Worker"]
